@@ -222,10 +222,61 @@
 - 平台负责：`状态变更`、`执行授权`、`审计归档`、`SLA 统计`。
 - 禁止 Dify 直接改生产资源；所有执行请求必须经 `execution-gateway` 和 `policy-engine`。
 
+### 项目仓库拆分建议（MVP 推荐）
+
+当前架构建议按 3 个项目域推进，便于边界清晰、并行开发和后续替换演进：
+
+- `aiops-platform`：平台主仓库，承载前端、平台后端、Incident 主流程、审批、审计、时间线、执行控制台。
+- `aiops-tools`：工具与执行适配层仓库，承载查询工具、执行网关、安全治理与底层系统适配。
+- `aiops-workflow`：Agent 工作流与 RAG 资产仓库，承载 Dify workflows、Prompt、知识库配置、结构化输出 schema、评测样例。
+
+需要强调：这里是“项目域拆分建议”，不是要求一开始就做成 3 套重型微服务。MVP 阶段可以按 3 个仓库建设，但在部署上保持适度合并，优先保证联调效率与交付速度。
+
+### 三个项目的职责边界
+
+#### `aiops-platform`
+
+- 负责“事件如何流转、谁来审批、结果如何展示”。
+- 作为唯一主控层，持有 `incident`、`incident_timeline`、`remediation_action`、`audit_log` 等核心业务数据。
+- 负责调用 `aiops-workflow` 获取结构化 RCA 与动作建议。
+- 负责调用 `aiops-tools` 获取执行结果或触发审批后的受控动作。
+- 不负责具体 AI 工作流编排细节，也不直接耦合底层 Prometheus / Loki / K8s API 协议。
+
+#### `aiops-tools`
+
+- 负责“如何安全地查询数据、如何安全地执行动作”。
+- 提供 `query_metrics`、`query_logs`、`query_k8s`、`query_changes`、`execute_action` 等标准化能力。
+- 负责鉴权、限流、超时、重试、幂等、审计打点、回滚入口等安全治理能力。
+- 负责对接 Prometheus、Loki/ELK、K8s API、Ansible 等真实系统。
+- 不负责 Incident 生命周期，不负责页面，也不负责最终 RCA 编排逻辑。
+
+#### `aiops-workflow`
+
+- 负责“如何做诊断、如何组织证据、如何输出结构化 RCA 和建议”。
+- 以 Dify workflow 为核心承载方式，管理诊断工作流、Prompt、RAG 检索策略、输出 schema 和评测样例。
+- 通过调用 `aiops-tools` 暴露的查询工具补齐证据链。
+- 不持有 Incident 主状态，不承担审批和执行控制职责。
+- 不允许直接拥有生产执行权限；执行建议必须回到平台决策。
+
+### Workflow 优先于 Multi-Agent 的技术路线
+
+在当前 MVP 阶段，推荐采用“Dify workflow 优先”的路线，而不是一开始引入复杂的 multi-agent 协作。原因如下：
+
+- Workflow 更适合当前 AIOps 场景的固定输入、结构化输出和可审计要求。
+- Workflow 更容易控制时延、成本、失败降级和结构化 schema 一致性。
+- Workflow 更适合实现 `evidence -> conclusion -> confidence -> actions` 这类稳定链路。
+- Multi-agent 更适合复杂探索型诊断，但会显著提升调试成本、时延和结果不确定性。
+
+因此，本项目当前阶段的原则是：
+
+- `skill` 在工程上优先实现为一个定义清晰、输入输出稳定的 workflow。
+- 复杂诊断能力可在后续阶段逐步引入 agent 化节点，但不作为 MVP 的默认实现方式。
+- 只有在复杂跨域故障、证据冲突、多轮角色协同确有必要时，再考虑将局部能力升级为 multi-agent。
+
 ### 建议组件分工
 
 - 平台层（前后端自研，对应图中 Layer C / Layer E / 部分 Layer F）：Incident API、状态机、执行控制台、审计中心。
-- Dify 层（对应图中 Layer D 的 Dify Platform）：诊断 Agent、RAG 管理、工具调用编排。
+- Workflow 层（对应图中 Layer D 的 Dify Platform）：诊断工作流、RAG 管理、工具调用编排、结构化输出控制。
 - 工具层（Python 服务，对应查询工具与执行器适配层）：metrics/logs/k8s/change 查询与执行器网关。
 
 ### 三层项目详细设计
@@ -256,11 +307,12 @@
 - Sprint 2：执行控制台 + 审批流 + 时间线完整回放。
 - Sprint 3：审计中心 + KPI 看板 + 异常处理与告警。
 
-#### 2) Dify 层（Agent 与 RAG 中枢）
+#### 2) Workflow 层（Agent Workflow 与 RAG 中枢）
 
 **项目目标**
 
 - 提供可解释、可追踪的诊断能力，输出结构化 RCA 与动作建议。
+- 以 workflow 方式固化诊断路径、工具调用顺序和输出 schema，优先保证稳定性与可审计性。
 
 **核心子系统**
 
@@ -283,6 +335,12 @@
 - Sprint 2：完善 RAG（标签、重排、引用），稳定结构化输出。
 - Sprint 3：加入低置信度降级策略与评测集回归（RCA 准确率、幻觉率）。
 
+**实现原则**
+
+- `skill` 优先沉淀为标准 workflow，而不是自由形态的 multi-agent 协作。
+- 查询类 tool 可由 workflow 直接调用；执行类能力必须回到平台决策。
+- 输出必须严格符合平台约定 schema，避免自由文本直接进入自动化链路。
+
 #### 3) 工具层（Python 服务）
 
 **项目目标**
@@ -304,7 +362,7 @@
 #### 三层协同联调顺序（必须按顺序）
 
 1. 平台层先完成 Incident 状态机与诊断触发入口。
-2. Dify 层返回结构化 RCA（先不接自动执行）。
+2. Workflow 层返回结构化 RCA（先不接自动执行）。
 3. 工具层完成查询工具后，补齐证据链。
 4. 最后接执行网关与审批流，放开低风险自动动作。
 
