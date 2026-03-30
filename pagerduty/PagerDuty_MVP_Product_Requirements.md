@@ -2,7 +2,7 @@
 
 ## 1. 文档目标
 
-本文档基于 `PagerDuty_功能拆解与复刻需求.md`，
+本文档基于 `PagerDuty_Feature_Breakdown_and_Replication_Requirements.md`，
 进一步收敛出一个可执行的 PagerDuty 风格 Incident Management MVP 范围。
 
 本文档重点回答四个问题：

@@ -1,5 +1,7 @@
 # AGENTS.md
 
+<!-- markdownlint-disable MD013 MD022 MD032 -->
+
 This file guides agentic coding assistants operating in this repository.
 Current workspace: `C:\Users\A200477427\Learnings\AIOps-Docs`.
 
@@ -82,6 +84,8 @@ pytest tests/test_example.py::test_specific_case
 - Use clear heading hierarchy (`##`, `###`) with logical progression.
 - Keep numeric section prefixes when a document already uses them.
 - Use `---` only when it improves readability.
+- Use English names for new files and directories.
+- Chinese content is allowed inside Markdown documents when appropriate.
 
 ### 5.3 Terminology consistency
 - Wrap module/service identifiers in backticks.
@@ -142,6 +146,7 @@ If code/scripts are added, apply these defaults unless project configs override 
 - If canonical terms change in one doc, update related docs in the same change.
 - Keep diagram references and explanation text mutually consistent.
 - Prefer small, reviewable changes grouped by topic.
+- When renaming files, update all local references in the same change.
 
 ## 8) Agent Completion Checklist
 Before finishing a task, verify:

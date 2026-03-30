@@ -2,7 +2,9 @@
 
 ## 1. 文档目标
 
-本文档在 `PagerDuty_MVP_产品需求清单.md` 基础上，定义 PagerDuty 风格 Incident Management MVP 的页面结构、导航方式、核心信息组织方式和关键页面布局。
+本文档在 `PagerDuty_MVP_Product_Requirements.md` 基础上，
+定义 PagerDuty 风格 Incident Management MVP 的页面结构、导航方式、
+核心信息组织方式和关键页面布局。
 
 目标是帮助产品、设计和研发统一以下内容：
 
