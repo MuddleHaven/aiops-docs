@@ -30,6 +30,16 @@
 - [`workflow/Dify_Lightweight_Customization_and_Upgrade.md`](workflow/Dify_Lightweight_Customization_and_Upgrade.md)
   ：基于固定 Dify tag 的轻量定制与升级策略
 
+### Platform 文档
+
+- [`platform/AIOps_Platform_Requirements.md`](platform/AIOps_Platform_Requirements.md)
+  ：`aiops-platform` 需求清单与范围定义
+
+### Tools 文档
+
+- [`tools/AIOps_Tools_Requirements.md`](tools/AIOps_Tools_Requirements.md)
+  ：`aiops-tools` 需求清单与范围定义
+
 ## Dify Baseline Management
 
 当前与 Dify 相关的轻量定制和升级策略，统一参考：
@@ -57,6 +67,8 @@
 
 - `pagerduty/`：PagerDuty 对标拆解、MVP 范围与页面设计文档
 - `workflow/`：`aiops-workflow` 相关需求与设计文档
+- `platform/`：`aiops-platform` 相关需求与主控流程文档
+- `tools/`：`aiops-tools` 相关需求与接口治理文档
 
 ## 使用建议
 
